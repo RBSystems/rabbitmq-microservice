@@ -16,8 +16,8 @@ func failOnError(err error, failed string, success string) {
 	}
 }
 
-func Publish(message string, channel string) {
-	log.Printf("Publishing message: %s, on channel: %s", message, channel)
+func Publish(m Message) {
+	log.Printf("[%s] Publishing message: %s", m.Channel, m.Data)
 	conn, err := amqp.Dial("amqp://guest@localhost:5672")
 	failOnError(err, "\tfailed to connect to RabbitMQ", "\tConnected to RabbitMQ")
 	defer conn.Close()
@@ -27,12 +27,12 @@ func Publish(message string, channel string) {
 	defer ch.Close()
 
 	q, err := ch.QueueDeclare(
-		channel, // name
-		false,   // durable
-		false,   // delete when unused
-		false,   // exclusive
-		false,   // no-wait
-		nil,     // arguments
+		m.Channel, // name
+		false,     // durable
+		false,     // delete when unused
+		false,     // exclusive
+		false,     // no-wait
+		nil,       // arguments
 	)
 	failOnError(err, "\tfailed to declare a queue", "\tSuccessfully declared a queue")
 
@@ -42,8 +42,8 @@ func Publish(message string, channel string) {
 		false,  // mandatory
 		false,  // immediate
 		amqp.Publishing{
-			ContentType: "text/plain",
-			Body:        []byte(message),
+			ContentType: "text/json",
+			Body:        []byte(m.Data),
 		})
 	failOnError(err, "\tfailed to publish a message", "\tSuccessfully published a message")
 }
@@ -83,10 +83,10 @@ func Recieve(channel string) {
 
 	go func() {
 		for d := range msgs {
-			log.Printf("\t[%s]Recieved a message: %s", channel, d.Body)
+			log.Printf("[%s] Recieved a message: %s", channel, d.Body)
 		}
 	}()
 
-	log.Printf("[*] Waiting for messages (channel: %s). To exit press CTRL+C", channel)
+	log.Printf("[%s] Waiting for messages. To exit press CTRL+C", channel)
 	<-forever
 }
