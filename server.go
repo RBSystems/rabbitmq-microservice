@@ -1,7 +1,20 @@
 package main
 
-import "fmt"
+import (
+	"os"
+	"sync"
+
+	"github.com/byuoitav/rabbitmq-microservice/rabbitmq"
+)
 
 func main() {
-	fmt.Println("vim-go")
+	var wg sync.WaitGroup
+
+	hostname := os.Getenv("PI_HOSTNAME")
+
+	wg.Add(1)
+	rabbitmq.Publish("hey", "test")
+
+	go rabbitmq.Recieve("test")
+	wg.Wait()
 }

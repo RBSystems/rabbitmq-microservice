@@ -16,7 +16,7 @@ func failOnError(err error, failed string, success string) {
 	}
 }
 
-func publish(message string, channel string) {
+func Publish(message string, channel string) {
 	log.Printf("Publishing message: %s, on channel: %s", message, channel)
 	conn, err := amqp.Dial("amqp://guest@localhost:5672")
 	failOnError(err, "\tfailed to connect to RabbitMQ", "\tConnected to RabbitMQ")
@@ -36,7 +36,6 @@ func publish(message string, channel string) {
 	)
 	failOnError(err, "\tfailed to declare a queue", "\tSuccessfully declared a queue")
 
-	body := message
 	err = ch.Publish(
 		"",     // exchange
 		q.Name, // routing key
@@ -44,12 +43,13 @@ func publish(message string, channel string) {
 		false,  // immediate
 		amqp.Publishing{
 			ContentType: "text/plain",
-			Body:        []byte(body),
+			Body:        []byte(message),
 		})
 	failOnError(err, "\tfailed to publish a message", "\tSuccessfully published a message")
 }
 
-func recieve(channel string) {
+func Recieve(channel string) {
+	log.Printf("Setting up to recieve on channel: %s", channel)
 	conn, err := amqp.Dial("amqp://guest@localhost:5672")
 	failOnError(err, "\tfailed to connect to RabbitMQ", "\tConnected to RabbitMQ")
 	defer conn.Close()
@@ -83,7 +83,7 @@ func recieve(channel string) {
 
 	go func() {
 		for d := range msgs {
-			log.Printf("\tRecieved a message: %s", d.Body)
+			log.Printf("\t[%s]Recieved a message: %s", channel, d.Body)
 		}
 	}()
 
